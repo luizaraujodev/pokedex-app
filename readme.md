@@ -6,6 +6,7 @@ A expo app based on <a href="https://farias.design/">Flavio Farias<a> Figma's pr
 <div>
   <img style="margin: 5px" alt="home" src="assets/app.jpeg" width="200">
 </div>
+
 ---
 
 ## Technologies
