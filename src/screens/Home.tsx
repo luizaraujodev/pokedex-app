@@ -7,6 +7,7 @@ import {
   HStack,
   FlatList,
 } from "native-base";
+import LottieView from "lottie-react-native";
 import PokeballHeadingSvg from "@assets/images/pokeball-heading.svg";
 import { Input } from "@components/Input";
 
@@ -14,6 +15,7 @@ import { useEffect, useState } from "react";
 import api from "@services/api";
 import { Alert } from "react-native";
 import { PokemonCard } from "@components/PokemonCard";
+import { Loading } from "@components/Loading";
 
 type PokemonType = {
   type: {
@@ -36,35 +38,41 @@ export interface Request {
 export function Home() {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [pokemons, setPokemons] = useState<Pokemon[]>([]);
+  const [nextRequest, setNextRequest] = useState("");
+
+  async function getPokemons(): Promise<void> {
+    try {
+      setIsLoading(true);
+      const response =
+        nextRequest != ""
+          ? await api.get(nextRequest)
+          : await api.get("/pokemon");
+      const { next, results } = response.data;
+      setNextRequest(next);
+      const payloadPokemons = await Promise.all(
+        results.map(async (pokemon: Pokemon) => {
+          const { id, types } = await getMoreInfoAboutPokemonsByUrl(
+            pokemon.url
+          );
+
+          return {
+            name: pokemon.name,
+            id,
+            types,
+          };
+        })
+      );
+
+      setPokemons([...pokemons, ...(payloadPokemons as Pokemon[])]);
+    } catch (err) {
+      Alert.alert("ops, algo de errado aconteceu, tente mais tarde");
+    } finally {
+      setIsLoading(false);
+    }
+  }
 
   useEffect(() => {
-    async function getPokemons(): Promise<void> {
-      try {
-        const response = await api.get("/pokemon");
-        const { results } = response.data;
-
-        const payloadPokemons = await Promise.all(
-          results.map(async (pokemon: Pokemon) => {
-            const { id, types } = await getMoreInfoAboutPokemonsByUrl(
-              pokemon.url
-            );
-
-            return {
-              name: pokemon.name,
-              id,
-              types,
-            };
-          })
-        );
-
-        setPokemons(payloadPokemons as Pokemon[]);
-      } catch (err) {
-        Alert.alert("ops, algo de errado aconteceu, tente mais tarde");
-      } finally {
-        setIsLoading(false);
-      }
-    }
-
+    setNextRequest("");
     getPokemons();
   }, []);
 
@@ -96,7 +104,9 @@ export function Home() {
         renderItem={({ item }) => <PokemonCard pokemon={item} />}
         showsVerticalScrollIndicator={false}
         _contentContainerStyle={{ paddingBottom: 20 }}
+        onEndReached={getPokemons}
       />
+      {isLoading ? <Loading /> : <></>}
     </VStack>
   );
 }
