@@ -6,16 +6,23 @@ import {
   Image,
   HStack,
   FlatList,
+  Pressable,
 } from "native-base";
 import LottieView from "lottie-react-native";
 import PokeballHeadingSvg from "@assets/images/pokeball-heading.svg";
+import GenerationSvg from "@assets/icons/generation.svg";
+import FilterSvg from "@assets/icons/filter.svg";
+import SortSvg from "@assets/icons/sort.svg";
 import { Input } from "@components/Input";
 
 import { useEffect, useState } from "react";
 import api from "@services/api";
-import { Alert } from "react-native";
+import { Alert, TouchableOpacity } from "react-native";
 import { PokemonCard } from "@components/PokemonCard";
 import { Loading } from "@components/Loading";
+import { FilterModal } from "@components/FilterModal";
+import { GenerationModal } from "@components/GenerationModal";
+import { SortModal } from "@components/SortModal";
 
 type PokemonType = {
   type: {
@@ -39,6 +46,10 @@ export function Home() {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [pokemons, setPokemons] = useState<Pokemon[]>([]);
   const [nextRequest, setNextRequest] = useState("");
+  const [showFilterModal, setShowFilterModal] = useState<boolean>(false);
+  const [showGenerationModal, setShowGenerationModal] =
+    useState<boolean>(false);
+  const [showSortModal, setShowSortModal] = useState<boolean>(false);
 
   async function getPokemons(): Promise<void> {
     try {
@@ -84,10 +95,56 @@ export function Home() {
     return { id, types };
   }
 
+  function ensureAllModalsIsClosed() {
+    setShowFilterModal(false);
+    setShowGenerationModal(false);
+    setShowSortModal(false);
+  }
+
+  function handleFilterModal() {
+    ensureAllModalsIsClosed();
+    setShowFilterModal(true);
+  }
+
+  function handleGenerationModal() {
+    ensureAllModalsIsClosed();
+    setShowGenerationModal(true);
+  }
+
+  function handleSortModal() {
+    ensureAllModalsIsClosed();
+    setShowSortModal(true);
+  }
+
   return (
     <VStack flex={1}>
-      <PokeballHeadingSvg />
-      <VStack px={8} mt={-100}>
+      <FilterModal
+        isOpen={showFilterModal}
+        onClose={() => setShowFilterModal(false)}
+      />
+      <GenerationModal
+        isOpen={showGenerationModal}
+        onClose={() => setShowGenerationModal(false)}
+      />
+      <SortModal
+        isOpen={showSortModal}
+        onClose={() => setShowSortModal(false)}
+      />
+      <PokeballHeadingSvg style={{ position: "absolute" }} />
+
+      <HStack mt={50} alignContent="center" justifyContent="flex-end" px={8}>
+        <TouchableOpacity style={{ marginRight: 10, justifyContent: "center" }}>
+          <GenerationSvg onPress={handleGenerationModal} />
+        </TouchableOpacity>
+        <TouchableOpacity style={{ marginRight: 10, justifyContent: "center" }}>
+          <SortSvg onPress={handleSortModal} />
+        </TouchableOpacity>
+        <TouchableOpacity style={{ justifyContent: "center" }}>
+          <FilterSvg onPress={handleFilterModal} />
+        </TouchableOpacity>
+      </HStack>
+
+      <VStack mt={5} px={8} justifyContent="center">
         <Heading fontSize="38" fontFamily="heading" fontWeight="700">
           Pokedéx
         </Heading>
@@ -104,7 +161,7 @@ export function Home() {
         renderItem={({ item }) => <PokemonCard pokemon={item} />}
         showsVerticalScrollIndicator={false}
         _contentContainerStyle={{ paddingBottom: 20 }}
-        onEndReached={getPokemons}
+        //onEndReached={getPokemons}
       />
       {isLoading ? <Loading /> : <></>}
     </VStack>
